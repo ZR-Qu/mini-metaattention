@@ -1,29 +1,44 @@
 # Mini MetaAttention
 
-Mini MetaAttention 的 CPU Attention demo，包含 Q-only tiled 和 Q+K tiled online softmax 实现
+基于 PyTorch 的 CPU Attention demo，包含：
 
-当前支持：
+- Phase 1 Q-only tiled attention
+- Phase 1.5 Q+K tiled online softmax
+- Phase 2.1 Parallel Attention DSL 与 Python code generator
+- causal softmax 和 ReLU Attention 示例
 
-- causal self-attention
-- `float32`
-- CPU
-- 输入 shape：`[B, H, S, D]`
-- Q+K tiled online softmax
+生成代码支持 CPU、float32 输入：
+
+```text
+Q: [B, H, Sq, D]
+K: [B, H, Sk, D]
+V: [B, H, Sk, Dv]
+```
 
 ## 使用
 
 ```bash
 source .venv/bin/activate
 
+python -m pytest -q
 python bench.py --threads 1
 python bench.py --threads 8
-python -m pytest -q
 ```
 
-benchmark 默认使用：
+生成 Phase 2.1 代码：
+
+```bash
+python -m miniattn.generate examples.causal_softmax \
+  --tile-q 64 --tile-k 64 \
+  --output generated/causal_softmax.py
+
+python -m miniattn.generate examples.relu \
+  --tile-q 64 --tile-k 64 \
+  --output generated/relu.py
 ```
-B=1, H=4, S=1024, D=64
-tile_q=16,32,64,128,256
-online tile_q=64, tile_k=16,32,64,128,256,512,1024
+
+生成模块统一提供：
+
+```python
+attention(q, k, v)
 ```
-最后输出 Q-only 和 online 配置的延迟、误差和 score 大小，并给出各自最快的 tile
