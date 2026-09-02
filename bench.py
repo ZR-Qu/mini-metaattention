@@ -7,6 +7,7 @@ import torch
 
 from miniattn.ref import ref
 from miniattn.tiled import tiled
+from miniattn.online import online
 
 
 BATCH = 1
@@ -14,6 +15,8 @@ HEADS = 4
 SEQ_LEN = 1024
 DIM = 64
 TILE_QS = (16, 32, 64, 128, 256)
+ONLINE_TILE_Q = 64
+TILE_KS = (16, 32, 64, 128, 256, 512, 1024)
 WARMUPS = 5
 REPEATS = 20
 
@@ -30,8 +33,8 @@ def measure(fn):
     return statistics.median(samples)
 
 
-def score_mib(rows):
-    return BATCH * HEADS * rows * SEQ_LEN * 4 / (1024 * 1024)
+def score_mib(q_rows, k_rows=SEQ_LEN):
+    return BATCH * HEADS * q_rows * k_rows * 4 / (1024 * 1024)
 
 
 def main():
@@ -76,6 +79,38 @@ def main():
     best_tile, best_latency = min(results, key=lambda item: item[1])
     print(f"best_tile_q={best_tile}")
     print(f"best_tiled_median_ms={best_latency:.3f}")
+
+    print()
+    print(
+        "impl    tile_q  tile_k  q_tiles  k_tiles  threads  median_ms  "
+        "max_abs_error_vs_ref  max_score_mib"
+    )
+    online_results = []
+    for tile_k in TILE_KS:
+        actual = online(q, k, v, ONLINE_TILE_Q, tile_k)
+        max_error = (actual - expected).abs().max().item()
+        if not torch.allclose(actual, expected, rtol=1e-5, atol=1e-6):
+            raise AssertionError(
+                f"correctness failed for tile_q={ONLINE_TILE_Q}, "
+                f"tile_k={tile_k}: max_abs_error={max_error}"
+            )
+
+        latency_ms = measure(
+            lambda tile_k=tile_k: online(q, k, v, ONLINE_TILE_Q, tile_k)
+        )
+        q_tiles = math.ceil(SEQ_LEN / ONLINE_TILE_Q)
+        k_tiles = math.ceil(SEQ_LEN / tile_k)
+        online_results.append((tile_k, latency_ms))
+        print(
+            f"online  {ONLINE_TILE_Q:>6}  {tile_k:>6}  {q_tiles:>7}  "
+            f"{k_tiles:>7}  {args.threads:>7}  {latency_ms:>9.3f}  "
+            f"{max_error:>20.3e}  "
+            f"{score_mib(ONLINE_TILE_Q, min(tile_k, SEQ_LEN)):>13.2f}"
+        )
+
+    best_k, best_online = min(online_results, key=lambda item: item[1])
+    print(f"best_online_tile_k={best_k}")
+    print(f"best_online_median_ms={best_online:.3f}")
 
 
 if __name__ == "__main__":
