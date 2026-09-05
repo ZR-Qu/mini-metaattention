@@ -4,9 +4,10 @@ import pytest
 import torch
 
 from examples.causal_softmax import spec as causal_softmax_spec
+from examples.causal_relu import spec as causal_relu_spec
 from examples.relu import spec as relu_spec
 from miniattn.generate import generate
-from miniattn.ref import ref
+from miniattn.ref import ref, ref_causal_relu, ref_relu
 from miniattn.spec import AttentionSpec, Op, causal, identity, relu, scale, softmax
 
 
@@ -35,13 +36,21 @@ def test_generated_relu_supports_rectangular_inputs():
     k = torch.randn(1, 2, 11, 5)
     v = torch.randn(1, 2, 11, 3)
 
-    scores = q @ k.transpose(-2, -1)
-    scores = torch.relu(scores * q.shape[-1] ** -0.5)
-    expected = scores @ v
+    expected = ref_relu(q, k, v)
     actual = load_attention(generate(relu_spec, 4, 3))(q, k, v)
 
     assert actual.shape == (1, 2, 7, 3)
     torch.testing.assert_close(actual, expected, rtol=1e-5, atol=1e-6)
+
+
+def test_generated_causal_relu_matches_reference():
+    torch.manual_seed(2)
+    q = torch.randn(1, 2, 17, 5)
+    k = torch.randn_like(q)
+    v = torch.randn(1, 2, 17, 3)
+
+    actual = load_attention(generate(causal_relu_spec, 4, 3))(q, k, v)
+    torch.testing.assert_close(actual, ref_causal_relu(q, k, v), rtol=1e-5, atol=1e-6)
 
 
 def test_generated_composes_primitives_without_variant_name():

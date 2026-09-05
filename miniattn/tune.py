@@ -89,6 +89,8 @@ def tune(
     tile_k_candidates: Iterable[int] = DEFAULT_TILE_CANDIDATES,
     warmups: int = 5,
     repeats: int = 20,
+    rtol: float = 1e-5,
+    atol: float = 1e-6,
 ) -> tuple[list[dict[str, float | int | bool]], dict[str, float | int | bool]]:
     _validate_tensors(q, k, v)
     if not isinstance(spec, AttentionSpec):
@@ -127,7 +129,7 @@ def tune(
                     f"{tuple(expected.shape)}"
                 )
             max_error = (actual - expected).abs().max().item()
-            if not torch.allclose(actual, expected, rtol=1e-5, atol=1e-6):
+            if not torch.allclose(actual, expected, rtol=rtol, atol=atol):
                 raise AssertionError(
                     f"correctness failed for spec={spec.name}, tile_q={tile_q}, "
                     f"tile_k={tile_k}, shape={tuple(q.shape)}/{tuple(k.shape)}/"

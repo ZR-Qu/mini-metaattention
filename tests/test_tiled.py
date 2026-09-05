@@ -3,6 +3,7 @@ import torch
 from torch.nn.functional import scaled_dot_product_attention
 
 from miniattn.ref import ref
+from miniattn.online import online
 from miniattn.tiled import tiled
 
 
@@ -61,13 +62,41 @@ def test_rejects_non_4d_inputs():
         ref(q, k, v)
 
 
-def test_rejects_unequal_shapes():
-    q = torch.randn(1, 1, 7, 4)
-    k = torch.randn(1, 1, 8, 4)
-    v = torch.randn_like(q)
+@pytest.mark.parametrize(
+    "shapes",
+    [
+        ((1, 1, 7, 4), (1, 1, 7, 5), (1, 1, 7, 3)),
+        ((1, 1, 7, 4), (1, 1, 8, 4), (1, 1, 7, 3)),
+        ((1, 1, 7, 4), (1, 1, 7, 4), (1, 1, 8, 3)),
+        ((1, 1, 7, 4), (1, 1, 8, 4), (1, 1, 8, 3)),
+    ],
+)
+def test_rejects_invalid_causal_shapes(shapes):
+    q, k, v = (torch.randn(shape) for shape in shapes)
 
     with pytest.raises(ValueError):
+        ref(q, k, v)
+    with pytest.raises(ValueError):
         tiled(q, k, v, 4)
+    with pytest.raises(ValueError):
+        online(q, k, v, 4, 3)
+
+
+def test_causal_implementations_support_distinct_value_dim():
+    torch.manual_seed(2)
+    q = torch.randn(1, 2, 17, 5)
+    k = torch.randn_like(q)
+    v = torch.randn(1, 2, 17, 3)
+    expected = ref(q, k, v)
+
+    actual_tiled = tiled(q, k, v, 4)
+    actual_online = online(q, k, v, 4, 3)
+
+    assert expected.shape == (1, 2, 17, 3)
+    assert actual_tiled.shape == expected.shape
+    assert actual_online.shape == expected.shape
+    torch.testing.assert_close(actual_tiled, expected, rtol=1e-5, atol=1e-6)
+    torch.testing.assert_close(actual_online, expected, rtol=1e-5, atol=1e-6)
 
 
 def test_rejects_non_float32_inputs():

@@ -6,6 +6,7 @@ import torch
 from examples.causal_softmax import spec as causal_spec
 from examples.relu import spec as relu_spec
 from miniattn.ref import ref
+from miniattn.spec import AttentionSpec, causal, identity, relu, scale
 
 
 tune_module = importlib.import_module("miniattn.tune")
@@ -95,6 +96,42 @@ def test_tune_supports_rectangular_relu_inputs():
         for result in results
     }
     assert interactions == {(3, 2): 8, (3, 7): 2, (5, 2): 4, (5, 7): 1}
+
+
+def test_tune_supports_unseen_composition():
+    spec = AttentionSpec(
+        name="unseen_combination",
+        pattern="parallel",
+        score_mod=(scale(0.125), relu()),
+        mask_mod=causal(),
+        rownorm=identity(),
+    )
+    torch.manual_seed(3)
+    q = torch.randn(1, 1, 7, 4)
+    k = torch.randn_like(q)
+    v = torch.randn(1, 1, 7, 2)
+
+    def reference_fn(q, k, v):
+        scores = torch.relu((q @ k.transpose(-2, -1)) * 0.125)
+        indices = torch.arange(q.shape[-2])
+        scores = scores.masked_fill(indices[None, :] > indices[:, None], 0.0)
+        return scores @ v
+
+    results, best = tune_module.tune(
+        spec,
+        q=q,
+        k=k,
+        v=v,
+        reference_fn=reference_fn,
+        tile_q_candidates=(4,),
+        tile_k_candidates=(3,),
+        warmups=0,
+        repeats=1,
+        atol=1e-6,
+    )
+
+    assert len(results) == 4
+    assert best in results
 
 
 def test_tune_correctness_failure_is_fail_fast(monkeypatch):

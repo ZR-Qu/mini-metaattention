@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import torch
+from matplotlib import font_manager
 
 from examples.causal_softmax import spec
 from miniattn.generate import generate
@@ -146,20 +147,83 @@ def _plot_search(path):
 
 
 def _plot_throughput(path):
+    font_path = Path("/mnt/c/Windows/Fonts/times.ttf")
+    if font_path.exists():
+        font_manager.fontManager.addfont(font_path)
+    plt.rcParams["font.family"] = ["Times New Roman", "serif"]
+
     compare = pd.read_csv(path)
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5), constrained_layout=True)
-    styles = {"reference": "o-", "fixed": "s--", "tuned": "^-"}
+    fig, axes = plt.subplots(
+        1, 2, figsize=(7.2, 3.0), sharex=True, sharey=True, constrained_layout=True
+    )
+    fig.patch.set_facecolor("white")
+    styles = {
+        "reference": {
+            "label": "Reference",
+            "color": "#9FA6AE",
+            "marker": "o",
+            "linestyle": "-",
+        },
+        "fixed": {
+            "label": "Fixed 64×64",
+            "color": "#A85C5C",
+            "marker": "s",
+            "linestyle": "--",
+        },
+        "tuned": {
+            "label": "Tuned",
+            "color": "#2F6FA5",
+            "marker": "^",
+            "linestyle": "-",
+        },
+    }
+    panel_titles = {1: "(a) 1 thread", 8: "(b) 8 threads"}
+
     for axis, threads in zip(axes, THREADS):
         subset = compare[compare["threads"] == threads]
         for implementation, style in styles.items():
-            values = subset[subset["implementation"] == implementation].sort_values("sq")
-            axis.plot(values["sq"], values["tokens_per_second"], style, label=implementation)
-        axis.set_title(f"threads={threads}")
-        axis.set_xlabel("sequence length S")
-        axis.set_ylabel("input tokens / second")
-        axis.grid(alpha=0.25)
-        axis.legend()
-    fig.savefig(PLOTS_DIR / "throughput.png", dpi=180)
+            values = subset[subset["implementation"] == implementation].sort_values(
+                "sq"
+            )
+            axis.plot(
+                values["sq"],
+                values["tokens_per_second"] / 1_000_000,
+                label=style["label"],
+                color=style["color"],
+                marker=style["marker"],
+                linestyle=style["linestyle"],
+                linewidth=1.25,
+                markersize=4.2,
+                markeredgecolor="black",
+                markeredgewidth=0.4,
+            )
+        axis.set_title(panel_titles[threads], loc="left", fontsize=9, pad=7)
+        axis.set_xlabel("Sequence length S", fontsize=8)
+        axis.set_xticks(SEQ_LENS)
+        axis.set_facecolor("white")
+        axis.set_axisbelow(True)
+        axis.grid(axis="y", color="#E4E7EA", linewidth=0.55)
+        for spine in axis.spines.values():
+            spine.set_visible(True)
+            spine.set_color("black")
+            spine.set_linewidth(0.7)
+        axis.tick_params(axis="both", labelsize=7.2, width=0.6, length=2.5)
+
+    axes[0].set_ylabel("Input tokens/s (×10⁶)", fontsize=8)
+    axes[0].legend(
+        frameon=False,
+        fontsize=6.8,
+        ncol=3,
+        loc="upper right",
+        handletextpad=0.4,
+        columnspacing=0.9,
+    )
+    fig.savefig(
+        PLOTS_DIR / "throughput.png",
+        dpi=300,
+        bbox_inches="tight",
+        facecolor="white",
+    )
     plt.close(fig)
 
 
