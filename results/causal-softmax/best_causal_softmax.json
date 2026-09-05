@@ -1,0 +1,150 @@
+{
+  "spec": {
+    "name": "causal_softmax",
+    "pattern": "parallel",
+    "score_mod": [
+      {
+        "name": "scale",
+        "value": null
+      }
+    ],
+    "mask_mod": {
+      "name": "causal",
+      "value": null
+    },
+    "rownorm": {
+      "name": "softmax",
+      "value": null
+    }
+  },
+  "best_results": [
+    {
+      "batch": 1,
+      "heads": 4,
+      "sq": 128,
+      "sk": 128,
+      "dim": 64,
+      "value_dim": 64,
+      "dtype": "float32",
+      "device": "cpu",
+      "threads": 1,
+      "best": {
+        "tile_q": 64,
+        "tile_k": 128,
+        "median_latency_ms": 0.36545599868986756
+      }
+    },
+    {
+      "batch": 1,
+      "heads": 4,
+      "sq": 256,
+      "sk": 256,
+      "dim": 64,
+      "value_dim": 64,
+      "dtype": "float32",
+      "device": "cpu",
+      "threads": 1,
+      "best": {
+        "tile_q": 64,
+        "tile_k": 256,
+        "median_latency_ms": 0.9648770064814016
+      }
+    },
+    {
+      "batch": 1,
+      "heads": 4,
+      "sq": 512,
+      "sk": 512,
+      "dim": 64,
+      "value_dim": 64,
+      "dtype": "float32",
+      "device": "cpu",
+      "threads": 1,
+      "best": {
+        "tile_q": 64,
+        "tile_k": 256,
+        "median_latency_ms": 3.0339784862007946
+      }
+    },
+    {
+      "batch": 1,
+      "heads": 4,
+      "sq": 1024,
+      "sk": 1024,
+      "dim": 64,
+      "value_dim": 64,
+      "dtype": "float32",
+      "device": "cpu",
+      "threads": 1,
+      "best": {
+        "tile_q": 64,
+        "tile_k": 1024,
+        "median_latency_ms": 10.41351250023581
+      }
+    },
+    {
+      "batch": 1,
+      "heads": 4,
+      "sq": 128,
+      "sk": 128,
+      "dim": 64,
+      "value_dim": 64,
+      "dtype": "float32",
+      "device": "cpu",
+      "threads": 8,
+      "best": {
+        "tile_q": 128,
+        "tile_k": 128,
+        "median_latency_ms": 0.2278809988638386
+      }
+    },
+    {
+      "batch": 1,
+      "heads": 4,
+      "sq": 256,
+      "sk": 256,
+      "dim": 64,
+      "value_dim": 64,
+      "dtype": "float32",
+      "device": "cpu",
+      "threads": 8,
+      "best": {
+        "tile_q": 128,
+        "tile_k": 256,
+        "median_latency_ms": 0.6699890072923154
+      }
+    },
+    {
+      "batch": 1,
+      "heads": 4,
+      "sq": 512,
+      "sk": 512,
+      "dim": 64,
+      "value_dim": 64,
+      "dtype": "float32",
+      "device": "cpu",
+      "threads": 8,
+      "best": {
+        "tile_q": 128,
+        "tile_k": 512,
+        "median_latency_ms": 1.9455150031717494
+      }
+    },
+    {
+      "batch": 1,
+      "heads": 4,
+      "sq": 1024,
+      "sk": 1024,
+      "dim": 64,
+      "value_dim": 64,
+      "dtype": "float32",
+      "device": "cpu",
+      "threads": 8,
+      "best": {
+        "tile_q": 256,
+        "tile_k": 1024,
+        "median_latency_ms": 7.122617011191323
+      }
+    }
+  ]
+}

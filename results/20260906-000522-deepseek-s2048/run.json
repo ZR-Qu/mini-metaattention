@@ -1,0 +1,43 @@
+{
+  "run_id": "20260906-000522-deepseek-s2048",
+  "label": "deepseek-s2048",
+  "variant": "causal_softmax",
+  "spec": {
+    "name": "causal_softmax",
+    "pattern": "parallel",
+    "score_mod": [
+      {
+        "name": "scale",
+        "value": null
+      }
+    ],
+    "mask_mod": {
+      "name": "causal",
+      "value": null
+    },
+    "rownorm": {
+      "name": "softmax",
+      "value": null
+    }
+  },
+  "batch": 1,
+  "heads": 16,
+  "seq_len": 2048,
+  "dim": 192,
+  "value_dim": 128,
+  "dtype": "float32",
+  "device": "cpu",
+  "threads": 8,
+  "tile_candidates": [
+    16,
+    32,
+    64,
+    128,
+    256,
+    512,
+    1024,
+    2048
+  ],
+  "warmups": 5,
+  "repeats": 20
+}
