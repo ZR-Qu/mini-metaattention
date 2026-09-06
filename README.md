@@ -21,7 +21,35 @@ V: [B, H, Sk, Dv]
 
 使用 CPU `float32`；示例包含 causal softmax、ReLU 和 causal ReLU
 
+## 目录结构
 
+```text
+mini-metaattention/
+├── miniattn/
+│   ├── spec.py                 # 统一DSL格式
+│   ├── generate.py             # 代码生成器（阶段2）
+│   ├── tune.py                 # tile 自动调优（阶段3）
+│   ├── ref.py                  # baseline 参考实现
+│   ├── tiled.py                # Q-only 分块实现 （阶段1）
+│   └── online.py               # online Softmax 实现（阶段1理解demo）
+├── examples/
+│   ├── causal_softmax.py       # Causal Softmax 规格
+│   ├── relu.py                 # ReLU Attention 规格
+│   └── causal_relu.py          # Causal ReLU 规格
+├── experiments/
+│   ├── autotune_causal_softmax.py  # Causal Softmax 代码生成+自动调优实验（阶段2）
+│   ├── autotune_variants.py        # 不同 Attention 语义自动调优实验（阶段3）
+│   └── run_autotune.py             # 单 workload 实验（阶段3）
+├── tests/                      # 测试
+├── generated/                  # 生成的 Attention 代码
+├── results/<run-id>/           # 实验数据
+├── plots/<run-id>/             # 实验图表
+├── scripts/test.sh             # 一键测试
+├── .devcontainer/              # 可复现容器环境
+├── bench.py                    # 基础性能测试（阶段1）
+├── requirements.txt            # 依赖
+└── README.md
+```
 
 ## Dev Container
 
