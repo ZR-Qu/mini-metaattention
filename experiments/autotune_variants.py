@@ -138,7 +138,9 @@ def _plot(compare_path, plot_path):
     font_path = Path("/mnt/c/Windows/Fonts/times.ttf")
     if font_path.exists():
         font_manager.fontManager.addfont(font_path)
-    plt.rcParams["font.family"] = ["Times New Roman", "serif"]
+    plt.rcParams["font.family"] = (
+        "Times New Roman" if font_path.exists() else "Liberation Serif"
+    )
 
     compare = pd.read_csv(compare_path)
     variant_order = list(VARIANT_ORDER)

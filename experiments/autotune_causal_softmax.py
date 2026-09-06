@@ -1,5 +1,6 @@
 import argparse
 import json
+from datetime import datetime
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -15,8 +16,9 @@ from miniattn.tune import DEFAULT_TILE_CANDIDATES, measure_latency, tune
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RESULTS_DIR = ROOT / "results" / "causal-softmax"
-PLOTS_DIR = ROOT / "plots" / "causal-softmax"
+RESULTS_DIR = ROOT / "results"
+PLOTS_DIR = ROOT / "plots"
+GENERATED_DIR = ROOT / "generated"
 BATCH = 1
 HEADS = 4
 SEQ_LENS = (128, 256, 512, 1024)
@@ -124,7 +126,7 @@ def _write_csv(path, rows):
     pd.DataFrame(rows).to_csv(path, index=False)
 
 
-def _plot_search(path):
+def _plot_search(path, plot_path):
     search = pd.read_csv(path)
     search = search[search["sq"] == 1024]
     fig, axes = plt.subplots(1, 2, figsize=(14, 5), constrained_layout=True)
@@ -142,15 +144,17 @@ def _plot_search(path):
         axis.set_title(f"S=1024, threads={threads}; best={int(best['tile_q'])}x{int(best['tile_k'])}")
         axis.set_xlabel("tile_k")
         axis.set_ylabel("tile_q")
-    fig.savefig(PLOTS_DIR / "search.png", dpi=180)
+    fig.savefig(plot_path, dpi=180)
     plt.close(fig)
 
 
-def _plot_throughput(path):
+def _plot_throughput(path, plot_path):
     font_path = Path("/mnt/c/Windows/Fonts/times.ttf")
     if font_path.exists():
         font_manager.fontManager.addfont(font_path)
-    plt.rcParams["font.family"] = ["Times New Roman", "serif"]
+    plt.rcParams["font.family"] = (
+        "Times New Roman" if font_path.exists() else "Liberation Serif"
+    )
 
     compare = pd.read_csv(path)
     fig, axes = plt.subplots(
@@ -219,7 +223,7 @@ def _plot_throughput(path):
         columnspacing=0.9,
     )
     fig.savefig(
-        PLOTS_DIR / "throughput.png",
+        plot_path,
         dpi=300,
         bbox_inches="tight",
         facecolor="white",
@@ -228,8 +232,13 @@ def _plot_throughput(path):
 
 
 def run(*, warmups=5, repeats=20):
-    RESULTS_DIR.mkdir(exist_ok=True)
-    PLOTS_DIR.mkdir(exist_ok=True)
+    run_id = datetime.now().strftime("%Y%m%d-%H%M%S-causal-softmax")
+    results_dir = RESULTS_DIR / run_id
+    plots_dir = PLOTS_DIR / run_id
+    generated_dir = GENERATED_DIR / run_id
+    results_dir.mkdir(parents=True)
+    plots_dir.mkdir(parents=True)
+    generated_dir.mkdir(parents=True)
     search_rows = []
     compare_rows = []
     best_results = []
@@ -282,9 +291,9 @@ def run(*, warmups=5, repeats=20):
                 f"latency={best['median_latency_ms']:.3f} ms"
             )
 
-    search_path = RESULTS_DIR / "search.csv"
-    compare_path = RESULTS_DIR / "compare.csv"
-    best_path = RESULTS_DIR / "best_causal_softmax.json"
+    search_path = results_dir / "search.csv"
+    compare_path = results_dir / "compare.csv"
+    best_path = results_dir / "best_causal_softmax.json"
     _write_csv(search_path, search_rows)
     _write_csv(compare_path, compare_rows)
     best_path.write_text(
@@ -313,12 +322,16 @@ def run(*, warmups=5, repeats=20):
         "for the context above.\n"
         "# Do not edit manually.\n\n"
     )
-    (ROOT / "generated" / "tuned_causal_softmax.py").write_text(
+    (generated_dir / "tuned_causal_softmax.py").write_text(
         header + generate(spec, best["tile_q"], best["tile_k"]),
         encoding="utf-8",
     )
-    _plot_search(search_path)
-    _plot_throughput(compare_path)
+    _plot_search(search_path, plots_dir / "search.png")
+    _plot_throughput(compare_path, plots_dir / "throughput.png")
+    print(f"run_id={run_id}")
+    print(f"results={results_dir.relative_to(ROOT)}")
+    print(f"plots={plots_dir.relative_to(ROOT)}")
+    print(f"generated={generated_dir.relative_to(ROOT)}")
     return search_path, compare_path, best_path
 
 
