@@ -120,11 +120,11 @@ generated/tuned_causal_softmax.py
 ```
 
 
-- `results/search.csv`：全部 tile 候选结果
-- `results/compare.csv`：对比csv
-- `results/best_causal_softmax.json`：各 workload 最佳配置
-- `plots/search.png`：tile 搜索热力图
-- `plots/throughput.png`：吞吐量对比图
+- `results/causal-softmax/search.csv`：全部 tile 候选结果
+- `results/causal-softmax/compare.csv`：对比csv
+- `results/causal-softmax/best_causal_softmax.json`：各 workload 最佳配置
+- `plots/causal-softmax/search.png`：tile 搜索热力图
+- `plots/causal-softmax/throughput.png`：吞吐量对比图
 - `generated/tuned_causal_softmax.py`：调优代码
 
 # Architecture

@@ -15,8 +15,8 @@ from miniattn.tune import DEFAULT_TILE_CANDIDATES, measure_latency, tune
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RESULTS_DIR = ROOT / "results"
-PLOTS_DIR = ROOT / "plots"
+RESULTS_DIR = ROOT / "results" / "causal-softmax"
+PLOTS_DIR = ROOT / "plots" / "causal-softmax"
 BATCH = 1
 HEADS = 4
 SEQ_LENS = (128, 256, 512, 1024)
